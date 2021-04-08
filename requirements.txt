@@ -4,3 +4,6 @@
 # external requirements
 click
 Sphinx
+jupyterlab
+numpy
+matplotlib

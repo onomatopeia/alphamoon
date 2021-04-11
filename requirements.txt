@@ -7,3 +7,6 @@ Sphinx
 jupyterlab
 numpy
 matplotlib
+torch
+torchvision
+Pillow

@@ -34,15 +34,8 @@ def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path, f
              https://discuss.pytorch.org/t/how-to-optimize-inception-model-with-auxiliary-classifiers/7958
             """
             optimizer.zero_grad()
-            if isinstance(model, models.Inception3):
-                output, aux_output = model(data)
-                loss1 = criterion(output, target)
-                loss2 = criterion(aux_output, target)
-                loss = loss1 + 0.4 * loss2
-            else:
-                output = model(data)
-                loss = criterion(output, target)
-
+            output = model(data)
+            loss = criterion(output, target)
             loss.backward()
             optimizer.step()
             train_loss += ((1 / (batch_idx + 1)) * (loss.data - train_loss))

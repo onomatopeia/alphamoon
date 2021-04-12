@@ -29,3 +29,17 @@ Siamese netowork
 Since there is a limited number of examples for each class, we could resort to one(few)-shot learning where Siamese networks are a primary choice nowadays.
 
 TODO: transfer learning and siamese networks?
+
+Reasons to Use Siamese Neural Network (from `internet <https://innovationincubator.com/siamese-neural-network-with-pytorch-code-example>`_):
+
+- Needs less training Examples to classify images because of One-Shot Learning
+- Learn by Embedding of the image so that it can learn Semantic Similarity
+- It helps in ensemble to give the best classifiers because of its correlation properties.
+- Mainly used for originality verification .
+
+Potential augementations:
+- translation
+- very subtle rotation (up to say 5 degrees)
+- aspect-ratio preserving scaling
+- combinations of the above
+

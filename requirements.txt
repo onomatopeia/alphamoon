@@ -10,3 +10,5 @@ matplotlib
 torch
 torchvision
 Pillow
+scipy
+scikit-learn

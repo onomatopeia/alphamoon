@@ -1,17 +1,8 @@
-import torchvision.models as models
-import torch.nn as nn
-import torch.optim as optim
-import torch.cuda
 import os
+
 import numpy as np
-from PIL import ImageFile
-
-from alphamoon.features.build_features import get_data_loader
-
-ImageFile.LOAD_TRUNCATED_IMAGES = True  # to alleviate OSError: image file is truncated (150 B not processed) problem
-
-
-no_classes = 36
+import torch.cuda
+from alphamoon.data.make_dataset import Phase
 
 
 def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path, from_epoch=0, valid_loss_min=np.Inf):
@@ -26,16 +17,14 @@ def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path, f
         # train the model #
         ###################
         model.train()
-        for batch_idx, (data, target) in enumerate(loaders['train']):
+        for batch_idx, (data, target) in enumerate(loaders[Phase.TRAIN]):
             # move to GPU
             if use_cuda:
-                data, target = data.cuda(), target.cuda()
-            """ From https://pytorch.org/tutorials/beginner/finetuning_torchvision_models_tutorial.html and 
-             https://discuss.pytorch.org/t/how-to-optimize-inception-model-with-auxiliary-classifiers/7958
-            """
+                data = tuple(d.cuda() for d in data)
+
             optimizer.zero_grad()
-            output = model(data)
-            loss = criterion(output, target)
+            output = model(*data)
+            loss = criterion(*output)
             loss.backward()
             optimizer.step()
             train_loss += ((1 / (batch_idx + 1)) * (loss.data - train_loss))
@@ -43,7 +32,7 @@ def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path, f
         ######################
         # validate the model #
         ######################
-        model.eval()
+        """model.eval()
         for batch_idx, (data, target) in enumerate(loaders['valid']):
             # move to GPU
             if use_cuda:
@@ -66,7 +55,7 @@ def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path, f
                 save_model(model, save_path)
             except Exception as e:
                 print(f'Could not save the model due to {str(e)}')
-            valid_loss_min = valid_loss
+            valid_loss_min = valid_loss"""
 
     # return trained model
     return model
@@ -86,7 +75,7 @@ def test(loaders, model, criterion, use_cuda):
     total = 0.
 
     model.eval()
-    for batch_idx, (data, target) in enumerate(loaders['test']):
+    for batch_idx, (data, target) in enumerate(loaders[Phase.TEST]):
         # move to GPU
         if use_cuda:
             data, target = data.cuda(), target.cuda()
@@ -108,37 +97,8 @@ def test(loaders, model, criterion, use_cuda):
         100. * correct / total, correct, total))
 
 
-def freeze_weights(model):
-    for param in model.parameters():
-        param.require_grad = False
-    return model
-
-
-def create_fc_layer(layer, n_outputs):
-    n_inputs = layer.in_features
-    return nn.Linear(n_inputs, n_outputs)
-
-
-def get_trainable_parameters(layers):
-    trainable_parameters = []
-    for layer in layers:
-        for param in layer.parameters():
-            if param.requires_grad:
-                trainable_parameters.append(param)
-    return trainable_parameters
-
-
-def get_optimizer(opt_class, params, lr, eps=0.1, weight_decay=0.9):
-    if opt_class == opt_SGD:
-        return optim.SGD(params, lr=lr)
-    if opt_class == opt_Adam:
-        return optim.Adam(params, lr=lr)
-    if opt_class == opt_RMSprop:
-        return optim.RMSprop(model_transfer.fc.parameters(), lr=lr, eps=eps, weight_decay=weight_decay)
-    raise ValueError(f'Unknown optimizer {opt_class}')
-
-
-if __name__ == '__main__':
+"""if __name__ == '__main__':
+    model = TripletNet()
     model_transfer = models.inception_v3(pretrained=True)
     model_transfer = freeze_weights(model_transfer)
     model_transfer.fc = create_fc_layer(model_transfer.fc, no_classes)
@@ -186,15 +146,5 @@ if __name__ == '__main__':
 
     # load the model that got the best validation accuracy (uncomment the line below)
     model_transfer.load_state_dict(torch.load(f'model_transfer_{suffix}.pt'))
-
-    # train the model
-
-    n_epochs = 100
-    suffix = f'_{opt_class}_{n_epochs}_{lr}'
-    model_transfer = train(n_epochs, loaders_transfer, model_transfer, optimizer_transfer,
-                           criterion_transfer, use_cuda, f'model_transfer_{suffix}.pt')
-
-    # load the model that got the best validation accuracy (uncomment the line below)
-    model_transfer.load_state_dict(torch.load(f'model_transfer_{suffix}.pt'))
     test(loaders_transfer, model_transfer, criterion_transfer, use_cuda)
-
+"""

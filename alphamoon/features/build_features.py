@@ -1,43 +1,30 @@
-import torch
-import numpy as np
-import os
-from torchvision import datasets
-import torchvision.transforms as transforms
-from PIL import ImageFile
-
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-batch_size = 10
-num_workers = 0
-normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
-phases = ['train', 'valid', 'test']
+import torch.nn as nn
 
 
-def get_data_loader(directory, phase, input_size, batch_size=10, num_workers=0):
-    if phase == 'train':
-        image_transforms = transforms.Compose([
-            transforms.RandomResizedCrop(input_size),
-            transforms.RandomHorizontalFlip(0.05),
-            transforms.RandomVerticalFlip(),
-            transforms.RandomRotation(45),
-            transforms.ToTensor(),
-            normalize
-        ])
-        shuffle = True
-    else:
-        image_transforms = transforms.Compose([
-            transforms.Resize(input_size),
-            transforms.CenterCrop(input_size),
-            transforms.ToTensor(),
-            normalize,
-        ])
-        shuffle = False
+class EmbeddingNet(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super().__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, output_size)
 
-    return torch.utils.data.DataLoader(
-        datasets.ImageFolder(directory, image_transforms),
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=num_workers,
-        pin_memory=True)
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
 
+
+class TripletNet(nn.Module):
+    def __init__(self, embedding_net):
+        super().__init__()
+        self.embedding_net = embedding_net
+
+    def forward(self, x1, x2, x3):
+        output1 = self.embedding_net(x1.float())
+        output2 = self.embedding_net(x2.float())
+        output3 = self.embedding_net(x3.float())
+        return output1, output2, output3
+
+    def get_embedding(self, x):
+        return self.embedding_net(x)

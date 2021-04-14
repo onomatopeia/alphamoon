@@ -48,7 +48,9 @@ class TripletDataset(Dataset):
         indices_for_pos = np.where(y == y_anchor)[0]
         indices_for_neg = np.where(y != y_anchor)[0]
 
-        idx_pos = random.choice(indices_for_pos)
+        idx_pos = index
+        while idx_pos == index:
+            idx_pos = random.choice(indices_for_pos)
         idx_neg = random.choice(indices_for_neg)
 
         return x_anchor, X[idx_pos], X[idx_neg]
@@ -60,7 +62,17 @@ class TripletDataset(Dataset):
             return len(self.y_test)
 
 
-def get_data_loader(phase: Phase, X_train, y_train, X_test, y_test, batch_size: int = 10, shuffle: bool = True,
-                    num_workers: int = 0, pin_memory: bool = True):
-    return torch.utils.data.DataLoader(TripletDataset(X_train, y_train, X_test, y_test, phase), batch_size=batch_size,
-                                       shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+def get_data_loaders(X_train, y_train, X_test, y_test, batch_size: int = 10, shuffle: bool = True,
+                     num_workers: int = 0, pin_memory: bool = True, train_fraction=0.8):
+    data_loaders = dict()
+    params = dict(batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+    data_loaders[Phase.TEST] = torch.utils.data.DataLoader(TripletDataset(X_train, y_train, X_test, y_test, Phase.TEST),
+                                                           **params)
+    train_dataset = TripletDataset(X_train, y_train, X_test, y_test, Phase.TRAIN)
+    total = X_train.shape[0]
+    train_size = int(total * train_fraction)
+    validation_size = total - train_size
+    train_set, validation_set = torch.utils.data.random_split(train_dataset, [train_size, validation_size])
+    data_loaders[Phase.TRAIN] = torch.utils.data.DataLoader(train_set, **params)
+    data_loaders[Phase.VALIDATION] = torch.utils.data.DataLoader(validation_set, **params)
+    return data_loaders

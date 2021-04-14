@@ -12,3 +12,4 @@ torchvision
 Pillow
 scipy
 scikit-learn
+tqdm

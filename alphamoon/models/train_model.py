@@ -2,20 +2,22 @@ import pickle
 
 import numpy as np
 import torch.cuda
+import torch.cuda
+import torch.nn
 import torch.nn
 import torch.optim
-from scipy.ndimage import affine_transform
+import torch.optim
 from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm
-
+import shutil
 from alphamoon.constants import *
 from alphamoon.data.make_dataset import get_data_loaders, Phase
 from alphamoon.features.build_features import EmbeddingNet, TripletNet
 
 
-def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path='state_dict_model.pt',
-          from_epoch=0, valid_loss_min=np.Inf):
+def train_embedding(n_epochs, loaders, model, optimizer, criterion, use_cuda, directory, valid_loss_min=np.Inf):
     """returns trained model"""
+    embeddings_model_path = None
 
     for epoch in range(1, n_epochs + 1):
         print(f'Epoch {epoch}')
@@ -53,7 +55,7 @@ def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path='s
 
         # print training/validation statistics
         print('Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'.format(
-            epoch + from_epoch,
+            epoch,
             train_loss,
             valid_loss
         ))
@@ -62,135 +64,159 @@ def train(n_epochs, loaders, model, optimizer, criterion, use_cuda, save_path='s
         if valid_loss <= valid_loss_min:
             print(f'Validation loss decreased ({valid_loss_min:.6f} --> {valid_loss:.6f}).  Saving model ...')
             try:
-                save_model(model, save_path)
+                embeddings_model_path = save_embedding_model(model, directory, epoch=epoch)
             except Exception as e:
                 print(f'Could not save the model due to {str(e)}')
             valid_loss_min = valid_loss
 
-    # return trained model
-    return model
+    # return the path to the trained model
+    return embeddings_model_path
 
 
-def save_model(model, file_name='state_dict_model.pt', epoch=-1):
+def save_embedding_model(model, directory=MODELS_DIR, epoch=-1):
+    embedding_model_path = directory / 'embedding_model.pt'
+    state_dict_model_path = directory / 'state_dict_model.pt'
     if epoch > 0:
-        full_path = Path(__file__).resolve().parents[2] / 'models' / file_name
-        file_stem = full_path.stem
-        file_ext = full_path.suffix
-        torch.save(model.state_dict(), f'{file_stem}_{epoch}{file_ext}')
-    torch.save(model.state_dict(), file_name)
+        torch.save(model.embedding_net.state_dict(), directory / f'embedding_model_{epoch}.pt')
+        torch.save(model.state_dict(), directory / f'state_dict_model_{epoch}.pt')
+
+    torch.save(model.embedding_net.state_dict(), embedding_model_path)
+    torch.save(model.state_dict(), state_dict_model_path)
+    print(f'Model saved to {state_dict_model_path}, embedding model saved to {embedding_model_path}')
+    return embedding_model_path
 
 
-def test(loaders, model, criterion, use_cuda):
-    # monitor test loss and accuracy
-    test_loss = 0.
-    correct = 0.
-    total = 0.
+def train_classifier(embedding_model, X_train, y_train, use_cuda, n_neighbours):
+    from sklearn.neighbors import KNeighborsClassifier
 
-    model.eval()
-    for batch_idx, (data, target) in enumerate(loaders[Phase.TEST]):
-        # move to GPU
-        if use_cuda:
-            data, target = data.cuda(), target.cuda()
-        # forward pass: compute predicted outputs by passing inputs to the model
-        output = model(data)
-        # calculate the loss
-        loss = criterion(output, target)
-        # update average test loss
-        test_loss = test_loss + ((1 / (batch_idx + 1)) * (loss.data - test_loss))
-        # convert output probabilities to predicted class
-        pred = output.data.max(1, keepdim=True)[1]
-        # compare predictions to true label
-        correct += np.sum(np.squeeze(pred.eq(target.data.view_as(pred))).cpu().numpy())
-        total += data.size(0)
+    X_train_data = torch.from_numpy(X_train)
+    if use_cuda:
+        X_train_data = X_train_data.cuda()
 
-    print('Test Loss: {:.6f}\n'.format(test_loss))
+    X_train_embedded = embedding_model.forward(X_train_data.float())
 
-    print('\nTest Accuracy: %2d%% (%2d/%2d)' % (
-        100. * correct / total, correct, total))
+    classifier = KNeighborsClassifier(n_neighbors=n_neighbours)
+    classifier = classifier.fit(X_train_embedded.detach().cpu().numpy(), y_train.ravel())
+    return classifier
 
 
-if __name__ == '__main__':
+def test_classifier(classifier, embedding_model, X_test, y_test, use_cuda, n_neighbours):
+    from sklearn.metrics import f1_score, precision_score, recall_score
 
-    def get_transformation_matrix(img_w_h):
-        theta = np.deg2rad(-7)
-        ry = rx = img_w_h / 2
+    X_test_data = torch.from_numpy(X_test)
+    if use_cuda:
+        X_test_data = X_test_data.cuda()
 
-        r00 = np.cos(theta)
-        r01 = -np.sin(theta)
-        r10 = np.sin(theta)
-        r11 = np.cos(theta)
-        r02 = rx - r00 * rx - r01 * ry
-        r12 = ry - r10 * rx - r11 * ry
+    X_test_embedded = embedding_model.forward(X_test_data.float())
+    y_pred = classifier.predict(X_test_embedded.detach().cpu().numpy())
 
-        rotation = np.array([[r00, r01, r02], [r10, r11, r12], [0, 0, 1]])
+    print('n =', n_neighbours)
+    weighted_f1 = f1_score(y_test.ravel(), y_pred, average='weighted')
+    print('F1 =', weighted_f1)
+    print('Precision =', precision_score(y_test.ravel(), y_pred, average='weighted'))
+    print('Recall =', recall_score(y_test.ravel(), y_pred, average='weighted'))
+    return weighted_f1
 
-        Sx = 0.9
-        Sy = 1.1
-        Tx = -5
-        Ty = 2
 
-        affine2 = np.array([[Sy, 0, Tx], [0, Sx, Ty], [0, 0, 1]])
-        trans = np.matmul(rotation, affine2)
-        return trans
-
+def determine_best_model():
+    # read data
     input_data_path = RAW_DATA_DIR / 'train.pkl'
     with input_data_path.open('rb') as file_handle:
         X, y = pickle.load(file_handle)
 
+    # fix the data i.e. change the class 30 to 14
     one_shot_example = np.where(y[:, 0] == 30)[0][0]
 
-    img_w_h = int(np.sqrt(X.shape[1]))
-    trans = get_transformation_matrix(img_w_h)
-    x2 = affine_transform(np.reshape(X[one_shot_example], (img_w_h, img_w_h)), trans)
-    x2_ravel = np.ravel(x2)
-    X_augmented = np.vstack((X, x2_ravel))
-    y_augmented = np.vstack((y, [30]))
+    X_augmented = X.copy()
+    y_augmented = y.copy()
+    y_augmented[one_shot_example] = 14
 
+    # prepare train and test
+    X_train = None
+    y_train = None
+    X_test = None
+    y_test = None
     ss = StratifiedShuffleSplit(n_splits=1, test_size=0.33, random_state=0)
     for train_index, test_index in ss.split(X_augmented, y_augmented):
         X_train, X_test = X_augmented[train_index], X_augmented[test_index]
         y_train, y_test = y_augmented[train_index], y_augmented[test_index]
 
-    embedding_model = EmbeddingNet(X_train.shape[1], 64, 64)
+    # define the embedding model
+    embedding_length = 64
+    embedding_model = EmbeddingNet(X_train.shape[1], embedding_length, embedding_length)
     model = TripletNet(embedding_model)
 
-    """model_transfer = models.inception_v3(pretrained=True)
-    model_transfer = freeze_weights(model_transfer)
-    model_transfer.fc = create_fc_layer(model_transfer.fc, no_classes)
-    model_transfer.AuxLogits.fc = create_fc_layer(model_transfer.AuxLogits.fc, no_classes)
-
-    assert model_transfer.fc.out_features == 133, \
-        f"Expected 133 classes but got {model_transfer.fc.out_features} (dog_classes = {no_classes})"
-    assert model_transfer.AuxLogits.fc.out_features == 133, \
-        f"Expected 133 classes in AuxLogits but got {model_transfer.AuxLogits.fc.out_features} (dog_classes = {no_classes})"
-
+    # set up everything
+    n_epochs = 10
+    margin = 10
     use_cuda = torch.cuda.is_available()
     if use_cuda:
-        model_transfer = model_transfer.cuda()
-
-    criterion_transfer = nn.CrossEntropyLoss()
-
-    lr = 0.01
-    opt_class = opt_SGD
-
-    trainable_params = get_trainable_parameters([model_transfer.fc, model_transfer.AuxLogits.fc])
-    print(len(trainable_params))
-    optimizer_transfer = get_optimizer(opt_class, trainable_params, lr)
-    """
-
-    # train the model
-    n_epochs = 10
-    margin = 1
-    use_cuda = True  # torch.cuda.is_available()
-    if use_cuda:
         model.cuda()
-    loss_fn = torch.nn.TripletMarginWithDistanceLoss(
-        distance_function=torch.nn.PairwiseDistance(), margin=margin)
+    loss_fn = torch.nn.TripletMarginWithDistanceLoss(distance_function=torch.nn.PairwiseDistance(), margin=margin)
     optimizer = torch.optim.Adam(model.parameters())
 
-    loaders = get_data_loaders(X_train, y_train, X_test, y_test)
-    train(n_epochs, loaders, model, optimizer, loss_fn, use_cuda)
+    # data loaders
+    loaders = get_data_loaders(X_train, y_train)
 
-    # load the model that got the best validation accuracy (uncomment the line below)
-    # model_transfer.load_state_dict(torch.load(f'model_transfer_{suffix}.pt'))
-    # test(loaders_transfer, model_transfer, criterion_transfer, use_cuda)
+    # train embeddings
+    embeddings_model_path = train_embedding(n_epochs, loaders, model, optimizer, loss_fn, use_cuda,
+                                            MODELS_INVESTIGATION_DIR)
+
+    # train the classifier
+    embedding_model.load_state_dict(torch.load(embeddings_model_path))
+    best_classifier_F1 = 0.0
+    best_classifier_n = 0
+    for n in range(1, 15, 2):
+        classifier = train_classifier(embedding_model, X_train, y_train, use_cuda, n)
+        F1 = test_classifier(classifier, embedding_model, X_test, y_test, use_cuda, n)
+
+        if F1 > best_classifier_F1:
+            best_classifier_F1 = F1
+            best_classifier_n = n
+        pickle.dump(classifier, (MODELS_INVESTIGATION_DIR / f'finalized_model_{n}.sav').open('wb'))
+    shutil.copy(MODELS_INVESTIGATION_DIR / f'finalized_model_{best_classifier_n}.sav',
+                (MODELS_DIR / f'finalized_model.sav'))
+
+
+def main():
+    # read data
+    input_data_path = RAW_DATA_DIR / 'train.pkl'
+    with input_data_path.open('rb') as file_handle:
+        X, y = pickle.load(file_handle)
+
+    # fix the data i.e. change the class 30 to 14
+    one_shot_example = np.where(y[:, 0] == 30)[0][0]
+
+    X_augmented = X.copy()
+    y_augmented = y.copy()
+    y_augmented[one_shot_example] = 14
+
+    # define the embedding model
+    embedding_length = 64
+    embedding_model = EmbeddingNet(X.shape[1], embedding_length, embedding_length)
+    model = TripletNet(embedding_model)
+
+    # set up everything
+    n_epochs = 10
+    margin = 10
+    use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        model.cuda()
+    loss_fn = torch.nn.TripletMarginWithDistanceLoss(distance_function=torch.nn.PairwiseDistance(), margin=margin)
+    optimizer = torch.optim.Adam(model.parameters())
+
+    # data loaders
+    loaders = get_data_loaders(X_augmented, y_augmented)
+
+    # train embeddings
+    embeddings_model_path = train_embedding(n_epochs, loaders, model, optimizer, loss_fn, use_cuda, MODELS_DIR)
+
+    # train the classifier
+    embedding_model.load_state_dict(torch.load(embeddings_model_path))
+    classifier = train_classifier(embedding_model, X_augmented, y_augmented, use_cuda, n_neighbours=9)
+    pickle.dump(classifier, (MODELS_DIR / f'finalized_model.sav').open('wb'))
+
+
+if __name__ == '__main__':
+    determine_best_model()
+    # main()

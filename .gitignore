@@ -87,3 +87,5 @@ target/
 
 # Mypy cache
 .mypy_cache/
+/models/investigation/*.pt
+/models/investigation/*.sav

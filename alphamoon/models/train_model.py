@@ -178,7 +178,7 @@ def determine_best_model():
                 (MODELS_DIR / f'finalized_model.sav'))
 
 
-def main():
+def train_final_model():
     # read data
     input_data_path = RAW_DATA_DIR / 'train.pkl'
     with input_data_path.open('rb') as file_handle:

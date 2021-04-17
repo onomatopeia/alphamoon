@@ -171,7 +171,7 @@ htmlhelp_basename = 'alphamoondoc'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    # 'papersize': 'letterpaper',
+    'papersize': 'a4paper',
 
     # The font size ('10pt', '11pt' or '12pt').
     # 'pointsize': '10pt',
@@ -186,7 +186,7 @@ latex_documents = [
     ('index',
      'alphamoon.tex',
      u'alphamoon Documentation',
-     u"agata migalska", 'manual'),
+     u"Agata Migalska", 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

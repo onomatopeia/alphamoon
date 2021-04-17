@@ -172,6 +172,7 @@ htmlhelp_basename = 'alphamoondoc'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     'papersize': 'a4paper',
+    'fncychap': '\\usepackage[Conny]{fncychap}'
 
     # The font size ('10pt', '11pt' or '12pt').
     # 'pointsize': '10pt',

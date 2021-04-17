@@ -42,6 +42,9 @@ Training of a model was executed in two phases. In the first phase, the objectiv
 
 10. Learn image embeddings by training the Triplet Model
 11. Train the k-NN classifier for various k and choose k for which F1 is maximized
+
+   Odd numbers between 1 and 15 were used for evaluation. Even numbers were not considered, since by rule they yielded worse results than surrounding odd numbers (the majority vote is undetermined if votes split 50:50 among an even number of voters). Numbers higher than 15 were not considered as they yielded numerical error indicating that such higher numbers might generate unstable or undetermined results.
+
 12. Save the resulting model to a file
 
 Point 3 was skipped in the training of the final model.

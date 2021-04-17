@@ -16,7 +16,6 @@ class Classifier:
         self.cuda = use_cuda and torch.cuda.is_available()
         if self.cuda:
             self.embedding_model.cuda()
-        print(self.cuda)
 
     def predict(self, X_test):
         X_test_data = torch.from_numpy(X_test)

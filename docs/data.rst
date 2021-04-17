@@ -33,7 +33,7 @@ In order to be able to perform training, validation, and testing of the proposed
 
    The example of class 30 after a random transformation
 
-In the testing phase it was determined that the assumption that classes represent unique objects is violated by classes 14 and 30 that contain the same letter N.
+During the testing phase, it was determined that the assumption that classes represent unique objects is violated by classes 14 and 30 that contain the same letter N. By definition, letter is *a symbol usually written or printed representing a speech sound and constituting a unit of an alphabet* [1]. Combining the definition and the statement of the problem discussed in this report, namely *predict labels for new examples of handwritten letters and digits*, it goes without saying that letters and digits define classes in the problem and thus there can be no two classes for a single letter / digit.
 
 .. figure:: images/class14.png
    :alt: Class 14
@@ -42,3 +42,5 @@ In the testing phase it was determined that the assumption that classes represen
    Class 14
 
 Thus, the single example from the class 30 was reassigned to the class 14, leaving class 30 empty.
+
+[1] https://www.merriam-webster.com/dictionary/letter

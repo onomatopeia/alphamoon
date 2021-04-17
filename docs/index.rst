@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Alphamoon Recruitment Task Report
-=================================
+Letter and Digit Classification with Triplet Net
+================================================
 
 .. toctree::
    :maxdepth: 2

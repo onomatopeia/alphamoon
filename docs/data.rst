@@ -5,11 +5,11 @@ The plots below present the number of data points per class in linear (left) and
 
 |dppc| |dppcl|
 
-.. |dppc| image:: images/data_points_per_class.png
+.. |dppc| image:: _static/images/data_points_per_class.png
    :width: 49%
    :alt: Number of data points per class
 
-.. |dppcl| image:: images/data_points_per_class_logscale.png
+.. |dppcl| image:: _static/images/data_points_per_class_logscale.png
    :width: 49%
    :alt: Number of data points per class (log scale)
 
@@ -21,13 +21,13 @@ Under the assumption that every two classes comprise unique and distinct element
 
 In order to be able to perform training, validation, and testing of the proposed model, a number of augmented copies of the class-30 example were created and added to the dataset.
 
-.. figure:: images/one_shot_example.png
+.. figure:: _static/images/one_shot_example.png
    :alt: The single example of class 30
    :width: 45%
 
    The single example of class 30
 
-.. figure:: images/class30_after_transformation.png
+.. figure:: _static/images/class30_after_transformation.png
    :alt: The example of class 30 after a random transformation
    :width: 45%
 
@@ -35,7 +35,7 @@ In order to be able to perform training, validation, and testing of the proposed
 
 During the testing phase, it was determined that the assumption that classes represent unique objects is violated by classes 14 and 30 that contain the same letter N. By definition, letter is *a symbol usually written or printed representing a speech sound and constituting a unit of an alphabet* [1]. Combining the definition and the statement of the problem discussed in this report, namely *predict labels for new examples of handwritten letters and digits*, it goes without saying that letters and digits define classes in the problem and thus there can be no two classes for a single letter / digit.
 
-.. figure:: images/class14.png
+.. figure:: _static/images/class14.png
    :alt: Class 14
    :width: 100%
 

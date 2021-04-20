@@ -13,7 +13,7 @@ Embedding Network
 
 Image embedding is retrieved as the output of a small neural network constructed as a fully connected feedforward neural network with one hidden layer and ReLU activation function.
 
-.. figure:: images/EmbeddingNet.png
+.. figure:: _static/images/EmbeddingNet.png
    :alt: Fully connected feedforward neural network for embedding learning
    :width: 50%
    :align: center
@@ -31,14 +31,14 @@ In order to learn the embeddings, a Triplet Network is used. A Triplet Network a
 
 The goal is to learn the embeddings so that the L\ :sub:`2`\  distances between classes is maximized, that is the distance between an anchor and a positive example is small whereas the distance between an anchor and a negative example is large.
 
-.. figure:: images/TripletNet.png
+.. figure:: _static/images/TripletNet.png
    :alt: Triplet-loss Network for Learning Image Embeddings
    :width: 50%
    :align: center
 
    Triplet-loss Network for Learning Image Embeddings
 
-.. figure:: images/sample_triplet.png
+.. figure:: _static/images/sample_triplet.png
    :alt: Sample triplet consisting of an anchor image, a positive example, and a negative example
    :width: 50%
    :align: center

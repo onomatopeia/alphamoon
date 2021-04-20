@@ -124,7 +124,7 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
      - 0.720766
      - 0.726194
 
-.. figure:: images/confusion_matrix.png
+.. figure:: _static/images/confusion_matrix.png
    :width: 90%
    :alt: Confusion Matrix for the Embedding Network in Experiment 5
    :align: center
@@ -142,7 +142,7 @@ and, to a lesser extend,
 * S and 5 (classes 24 and 26)
 * Y and 4 (classes 19 and 20).
 
-.. figure:: images/all_classes.png
+.. figure:: _static/images/all_classes.png
    :width: 70%
    :alt: Examples of all classes
    :align: center
@@ -154,7 +154,7 @@ k-Nearest Neighbor Classifier
 
 In the evaluation of the best classifier performance with respect to the number of voting nearest neighbors. Embedded images constitute a considered population out of which neighbors are chosen.
 
-.. figure:: images/knn_errors.png
+.. figure:: _static/images/knn_errors.png
    :width: 70%
    :align: center
    :alt: k-Nearest Neighbor Classfier Performance

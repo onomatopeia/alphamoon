@@ -1,7 +1,9 @@
-import torch
-import torch.cuda
 import pickle
 import time
+
+import torch
+import torch.cuda
+
 from alphamoon.constants import *
 from alphamoon.features.build_features import EmbeddingNet
 
@@ -39,4 +41,3 @@ if __name__ == '__main__':
     Classifier(use_cuda=False).predict(X)
     end = time.time() - start
     print(end)
-

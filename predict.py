@@ -14,4 +14,3 @@ def test_predict():
         X, y = pickle.load(file_handle)
     result = predict(X)
     assert y.shape == result.shape
-

@@ -101,7 +101,7 @@ def get_data_loaders(X_train: np.ndarray, y_train: np.ndarray,
     :return: dictionary of Phase-bound data loaders
     """
     data_loaders = dict()
-    params = dict(batch_size=batch_size, shuffle=shuffle,
+    params: Dict[str, Any] = dict(batch_size=batch_size, shuffle=shuffle,
                   num_workers=num_workers, pin_memory=pin_memory)
     train_dataset = TripletDataset(X_train, y_train)
     total = X_train.shape[0]

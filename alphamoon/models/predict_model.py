@@ -1,13 +1,14 @@
 import pickle
-import time
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.cuda
-from pathlib import Path
+
 from alphamoon.constants import (MODELS_DIR, EMBEDDING_MODEL_FILENAME,
                                  CLASSIFICATION_MODEL_FILENAME, RAW_DATA_DIR)
 from alphamoon.features.build_features import EmbeddingNet
-from alphamoon.models.train_model import ClassifierSupervisor  # PEP8
+from alphamoon.models.classifier import KNeighborsClassifier
 
 
 class Classifier:
@@ -28,7 +29,7 @@ class Classifier:
             torch.load(folder / EMBEDDING_MODEL_FILENAME))
         pickled_model_path = folder / CLASSIFICATION_MODEL_FILENAME
         with pickled_model_path.open('rb') as pickled_model:
-            self.classifier = pickle.load(pickled_model)
+            self.classifier: KNeighborsClassifier = pickle.load(pickled_model)
         self.cuda = use_cuda and torch.cuda.is_available()
         if self.cuda:
             self.embedding_model.cuda()
@@ -43,20 +44,7 @@ class Classifier:
         if self.cuda:
             X_test_data = X_test_data.cuda()
 
-        X_test_embedded = self.embedding_model.forward(X_test_data.float())
-        return self.classifier.predict(X_test_embedded.detach().cpu().numpy())
+        X_test_embedded = self.embedding_model.forward(X_test_data.float())\
+            .detach().cpu().numpy()
+        return self.classifier.predict(X_test_embedded)[..., np.newaxis]
 
-
-if __name__ == '__main__':
-    input_data_path = RAW_DATA_DIR / 'train.pkl'
-
-    with input_data_path.open('rb') as file_handle:
-        X, y = pickle.load(file_handle)
-    start = time.time()
-    Classifier().predict(X)
-    end = time.time() - start
-    print(end)
-    start = time.time()
-    Classifier(use_cuda=False).predict(X)
-    end = time.time() - start
-    print(end)

@@ -8,7 +8,7 @@ The best set of hyperparameters is given by experiment No 5 and is put in bold. 
 
 In addition, training and validation losses of each model are presented. The losses are the last recorded values before validation loss started to raise again, which indicates that the network started overfitting. Training loss and validation losses are margin dependent and so they allow to compare several models having the same margin. However, one should refrain from comparing models trained with different margins with these two metrics.
 
-.. list-table:: Table 1. Triplet Network Experiments
+.. list-table:: Triplet Network Experiments
    :header-rows: 1
 
    * - Experiment No
@@ -70,7 +70,7 @@ In addition, training and validation losses of each model are presented. The los
 
 In experiments 1 and 2, the initial dataset was extended with only 3 images representing the class 30, which is represented by "100% + 3".
 
-.. list-table:: Table 2. Triplet Network Results
+.. list-table:: Triplet Network Results
    :header-rows: 1
 
    * - Experiment No
@@ -142,12 +142,16 @@ and, to a lesser extend,
 * S and 5 (classes 24 and 26)
 * Y and 4 (classes 19 and 20).
 
+.. _target to all_classes:
+
 .. figure:: _static/images/all_classes.png
    :width: 70%
    :alt: Examples of all classes
    :align: center
 
-   Original classes in the provided dataset with most confused classes marked
+   Original classes in the provided dataset with pairs of most confused classes marked with the same color
+
+In :numref:`target to all_classes` each class is represented by a sample image from this class. The most confused pairs of classes, listed above, are framed with the same color.
 
 k-Nearest Neighbor Classifier
 -----------------------------

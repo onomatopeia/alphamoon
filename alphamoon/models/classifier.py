@@ -1,9 +1,10 @@
+from typing import Type, Any
+
 import numpy as np
 import torch
 import torch.cuda
 from sklearn.metrics import (accuracy_score, f1_score, precision_score,
                              recall_score)
-from sklearn.neighbors import KNeighborsClassifier
 
 from alphamoon.features.build_features import EmbeddingNet
 
@@ -13,8 +14,8 @@ class KNearestEmbedding:
     Classifier of the alphanumeric handwritten characters embeddings.
     """
 
-    def __init__(self, embedding_model: EmbeddingNet,
-                 n_neighbours: int) -> None:
+    def __init__(self, embedding_model: EmbeddingNet, classifier_class: Type[Any],
+                 **kwargs) -> None:
         """Initializes an instance of the :class:`ClassifierSupervisor` class.
 
         :param embedding_model: embedding model
@@ -22,7 +23,7 @@ class KNearestEmbedding:
         """
         self.embedding_model = embedding_model
         self.use_cuda = torch.cuda.is_available()
-        self.classifier = KNeighborsClassifier(n_neighbors=n_neighbours)
+        self.classifier = classifier_class(**kwargs)
 
     def get_embedding(self, X: np.ndarray) -> np.ndarray:
         """Given an array of samples this function returns an array of samples'
@@ -84,6 +85,7 @@ class KNearestEmbedding:
         """
         y_pred = self.predict(X)
         y_flat = y.ravel()
+        print(self.classifier.__class__.__name__)
         print('Accuracy,Precision,Recall,F1-score')
         print(accuracy_score(y_flat, y_pred),
               precision_score(y_flat, y_pred, average='weighted'),

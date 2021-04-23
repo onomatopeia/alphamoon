@@ -86,3 +86,4 @@ target/
 .mypy_cache/
 /models/investigation/*.pt
 /models/investigation/*.sav
+/reports/reviews/

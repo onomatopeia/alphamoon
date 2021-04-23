@@ -1,10 +1,25 @@
 Method
 ======
 
-The method comprises of two steps.
+Assumptions made during the initial development of a model were that each class represents a unique character. Under this assumption, one class, namely class No 30, contained only a single example. To address this situation, a two-step model is proposed:
 
-* In the first step, each image is translated into an embedding.
-* In the second step, a k-NN classifier is trained to classify embeddings.
+
+* In the first step, each image is translated into an embedding. This step is accomplished by means of a fully-connected feedforward neural network with a single hidden layer.
+* In the second step, a k-Nearest Neighbor (k-NN) classifier is trained to classify embeddings.
+
+Transforming examples from image space into a space of image embeddings is an effective technique when only one or few examples are available for a class. The problem of having such a small number of examples per class is called "one-shot learning" or "few-shot learning", depending on whether a single or several examples are available.
+
+In the course of the study it was determined that class 30 and class 14 both contain the images representing the same letter N. The two classes were merged for further analyses. These changed circumstance shed a new light on the problem, however none of these new conditions is undermining the validity of the proposed approach.
+
+It is recommended that alternative approaches are evaluated once the dataset is corrected.
+
+In the remainder of this chapter details of the two steps of the proposed approach, namely:
+
+* transformation of an image into an embedding, and
+* training a k-NN classifier to classify embeddings,
+
+are described.
+
 
 Image Embedding Learning
 ------------------------

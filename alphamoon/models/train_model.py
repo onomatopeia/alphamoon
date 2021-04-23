@@ -1,21 +1,21 @@
 import pickle
 import shutil
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Tuple, Union
+from typing import Dict, Iterable, Optional, Tuple, Union, Type, Any, List
 
 import numpy as np
 import torch
 import torch.cuda
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.neighbors import KNeighborsClassifier
 from torch.nn.modules import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from alphamoon.constants import (MODELS_DIR, RAW_DATA_DIR,
-                                 MODELS_INVESTIGATION_DIR,
-                                 EMBEDDING_MODEL_FILENAME)
+                                 MODELS_INVESTIGATION_DIR)
 from alphamoon.data.make_dataset import get_data_loaders, Phase
 from alphamoon.features.build_features import EmbeddingNet, TripletNet
 from alphamoon.models.classifier import KNearestEmbedding
@@ -29,7 +29,7 @@ class EmbeddingNetSupervisor:
     def __init__(self) -> None:
         """Initializes the :class:`EmbeddingNetSupervisor` class.
         """
-        self.model_path: Path
+        self.model_path: Optional[Path] = None
         self.valid_loss_min = np.Inf
 
     def train_embedding(self, n_epochs: int,
@@ -150,13 +150,15 @@ class EmbeddingNetSupervisor:
         :param epoch: epoch number
         :return: the path to the output file
         """
-        embedding_model_path = directory / EMBEDDING_MODEL_FILENAME
+        embedding_model_path = directory / 'embedding_model.pt'
         state_dict_model_path = directory / 'state_dict_model.pt'
         if epoch > 0:
             torch.save(model.embedding_net.state_dict(),
-                       directory / f'embedding_model_{epoch}.pt')
+                       directory /
+                       f'embedding_model_{epoch}.pt')
             torch.save(model.state_dict(),
-                       directory / f'state_dict_model_{epoch}.pt')
+                       directory /
+                       f'state_dict_model_{epoch}.pt')
 
         torch.save(model.embedding_net.state_dict(), embedding_model_path)
         torch.save(model.state_dict(), state_dict_model_path)
@@ -164,6 +166,25 @@ class EmbeddingNetSupervisor:
             f'Model saved to {state_dict_model_path}, '
             f'embedding model saved to {embedding_model_path}')
         return embedding_model_path
+
+
+def train_test_split(X, y, test_size, random_state) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Splits the dataset into training and testing sets.
+
+    :return: a tuple of X_train, X_test, y_train, y_test
+    """
+    ss = StratifiedShuffleSplit(n_splits=1, test_size=test_size,
+                                random_state=random_state)
+
+    for train_index, test_index in ss.split(X, y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        return X_train, X_test, y_train, y_test
+
+    raise Exception('The StratifiedShuffleSplit should have provided '
+                    'exactly one split of data to training and testing '
+                    'sets')
 
 
 class Executor:
@@ -235,24 +256,6 @@ class Executor:
         y_augmented[one_shot_example] = 14
         return X_augmented, y_augmented
 
-    def train_test_split(self) \
-            -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Splits the dataset into training and testing sets.
-
-        :return: a tuple of X_train, X_test, y_train, y_test
-        """
-        ss = StratifiedShuffleSplit(n_splits=1, test_size=self.test_size,
-                                    random_state=self.random_state)
-
-        for train_index, test_index in ss.split(self.X, self.y):
-            X_train, X_test = self.X[train_index], self.X[test_index]
-            y_train, y_test = self.y[train_index], self.y[test_index]
-            return X_train, X_test, y_train, y_test
-
-        raise Exception('The StratifiedShuffleSplit should have provided '
-                        'exactly one split of data to training and testing '
-                        'sets')
-
     def train_embedding(self, X_train: np.ndarray,
                         y_train: np.ndarray, directory: Path) -> 'Executor':
         """Trains the embedding neural network given training samples
@@ -272,38 +275,53 @@ class Executor:
         return self
 
     def train_classifier(self, X_train: np.ndarray, X_test: np.ndarray,
-                         y_train: np.ndarray, y_test: np.ndarray) -> int:
-        """Trains the k-Nearest Neighbors classifier and determines the value
-        of k for which model's F1 score is the highest.
+                         y_train: np.ndarray, y_test: np.ndarray,
+                         classifier_class: Type[Any],
+                         classifier_kwargs: List[Dict[str, Any]]) \
+            -> Tuple[Any, Dict[str, Any], float]:
+        """Trains an instance of ``classifier_class`` with each set of
+        hyperparameters in ``classifier_kwargs`` and determines those
+        hyperparameters for which the F1 score obtained by the classifier
+         is the highest.
 
         :param X_train: train samples
         :param X_test: test samples
         :param y_train: train labels
         :param y_test: test labels
-        :return: the value of best k
+        :param classifier_class: classifier class
+        :param classifier_kwargs: a list of dictionaries of classifier's
+            hyperparameters
+        :return: the best hyperparameters and the best obtained F1
         """
         best_classifier_F1 = 0.0
-        best_classifier_n = 0
-        for n in range(1, 15, 2):
-            classifier = KNearestEmbedding(self.embedding_model, n)
+        best_params_idx = 0
+        best_classifier = None
+        for i, hyperparameters in enumerate(classifier_kwargs):
+            classifier = KNearestEmbedding(self.embedding_model,
+                                           classifier_class,
+                                           **hyperparameters)
             classifier.fit(X_train, y_train)
-            F1 = f1_score(classifier.predict(X_test), y_test,
+            F1 = f1_score(y_test, classifier.predict(X_test),
                           average='weighted')
 
             if F1 > best_classifier_F1:
                 best_classifier_F1 = F1
-                best_classifier_n = n
-            classifier_n_sav_path = MODELS_INVESTIGATION_DIR \
-                / f'finalized_model_{n}.sav'
-            pickle.dump(classifier, classifier_n_sav_path.open('wb'))
+                best_params_idx = i
+                best_classifier = classifier
+                classifier_n_sav_path = MODELS_INVESTIGATION_DIR \
+                    / f'finalized_model_{i}.sav'
+                pickle.dump(classifier, classifier_n_sav_path.open('wb'))
+
         source_path = MODELS_INVESTIGATION_DIR \
-            / f'finalized_model_{best_classifier_n}.sav'
+            / f'finalized_model_{best_params_idx}.sav'
         destination_path = MODELS_DIR / f'finalized_model.sav'
         shutil.copy(source_path, destination_path)
-        return best_classifier_n
+
+        return (best_classifier, classifier_kwargs[best_params_idx],
+                best_classifier_F1)
 
 
-def determine_best_model() -> int:
+def determine_best_model() -> None:
     """This function determines the best model by performing the following
     actions:
 
@@ -315,12 +333,35 @@ def determine_best_model() -> int:
         -  trains a series k-NN classifiers on embeddings and returns such k \
         for which the F1 score is maximized.
 
-    :return: k for which the F1 score of a k-NN classifier is maximized.
     """
     executor = Executor()
-    X_train, X_test, y_train, y_test = executor.train_test_split()
+    X, y = executor.get_data()
+    random_state = 0
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
+                                                        random_state=random_state)
+    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train,
+                                                          test_size=0.2,
+                                                          random_state=random_state)
+
     executor.train_embedding(X_train, y_train, MODELS_INVESTIGATION_DIR)
-    return executor.train_classifier(X_train, X_test, y_train, y_test)
+
+    knn_params = [dict(n_neighbors=n) for n in range(1, 15, 2)]
+
+    classifier, params, f1score = executor.train_classifier(X_train, X_valid,
+                                                            y_train, y_valid,
+                                                            KNeighborsClassifier,
+                                                            knn_params)
+    print(params, f1score)
+
+    # result = executor.train_classifier(X_train, X_valid, y_train,
+    # y_valid, SVC, [{}])
+    # print(result)
+
+    # result = executor.train_classifier(X_train, X_valid, y_train,
+    # y_valid, RandomForestClassifier, [{}])
+    # print(result)
+
+    classifier.evaluate(X_test, y_test)
 
 
 def train_final_model(n_neighbors: int = 9) -> None:
@@ -341,11 +382,14 @@ def train_final_model(n_neighbors: int = 9) -> None:
     executor = Executor()
     X, y = executor.get_data()
     executor.train_embedding(X, y, MODELS_DIR)
-    classifier = KNearestEmbedding(executor.embedding_model, n_neighbors) \
+    classifier = KNearestEmbedding(executor.embedding_model,
+                                   KNeighborsClassifier,
+                                   n_neighbors=n_neighbors) \
         .fit(X, y)
     pickle.dump(classifier.classifier,
                 (MODELS_DIR / f'finalized_model.sav').open('wb'))
 
 
 if __name__ == '__main__':
-    train_final_model(determine_best_model())
+    determine_best_model()
+    # train_final_model()

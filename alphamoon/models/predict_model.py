@@ -5,10 +5,11 @@ import numpy as np
 import torch
 import torch.cuda
 
+from sklearn.neighbors import KNeighborsClassifier
+
 from alphamoon.constants import (MODELS_DIR, EMBEDDING_MODEL_FILENAME,
-                                 CLASSIFICATION_MODEL_FILENAME, RAW_DATA_DIR)
+                                 CLASSIFICATION_MODEL_FILENAME)
 from alphamoon.features.build_features import EmbeddingNet
-from alphamoon.models.classifier import KNeighborsClassifier
 
 
 class Classifier:
@@ -44,7 +45,6 @@ class Classifier:
         if self.cuda:
             X_test_data = X_test_data.cuda()
 
-        X_test_embedded = self.embedding_model.forward(X_test_data.float())\
+        X_test_embedded = self.embedding_model.forward(X_test_data.float()) \
             .detach().cpu().numpy()
         return self.classifier.predict(X_test_embedded)[..., np.newaxis]
-

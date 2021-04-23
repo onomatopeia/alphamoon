@@ -301,7 +301,8 @@ class Executor:
             classifier.fit(X_train, y_train)
             F1 = f1_score(y_valid, classifier.predict(X_valid),
                           average='weighted')
-
+            print(hyperparameters)
+            classifier.evaluate(X_valid, y_valid)
             if F1 > best_classifier_f1:
                 best_classifier_f1 = F1
                 best_params_idx = i
@@ -309,6 +310,11 @@ class Executor:
                 classifier_n_sav_path = MODELS_INVESTIGATION_DIR \
                                         / f'finalized_model_{i}.sav'
                 pickle.dump(classifier, classifier_n_sav_path.open('wb'))
+
+        if best_classifier is None:
+            if len(classifier_kwargs) == 0:
+                raise ValueError('No classifier kwargs provided')
+            raise ValueError('No classifier attained positive F1-score')
 
         source_path = MODELS_INVESTIGATION_DIR \
                       / f'finalized_model_{best_params_idx}.sav'
@@ -323,7 +329,8 @@ def determine_best_model(embedding_length: int,
                          margin: Union[float, int],
                          knn_params: List[Dict[str, Any]],
                          data_pre_processing: DataPreProcessing
-                         = DataPreProcessing.FIX_DUPLICATE_CLASSES) \
+                         = DataPreProcessing.FIX_DUPLICATE_CLASSES,
+                         evaluate_on_test_dataset: bool = False) \
         -> Dict[str, Any]:
     """This function determines the best model by performing the following
     actions:
@@ -341,6 +348,8 @@ def determine_best_model(embedding_length: int,
     :param knn_params: list of classifier's parameters dictionaries
     :param data_pre_processing: an action that shall be done to the data in \
         the preprocessing stage
+    :param evaluate_on_test_dataset: a flag whether to evaluate the final \
+        model on the test dataset, False by default
     :return: dictionary of classifier's parameters
     """
 
@@ -367,8 +376,9 @@ def determine_best_model(embedding_length: int,
         .train_classifier(X_train, X_valid, y_train, y_valid,
                           KNeighborsClassifier, knn_params)
     print(params, f1score)
-
-    classifier.evaluate(X_test, y_test)
+    if evaluate_on_test_dataset:
+        print('Evaluation on the test dataset')
+        classifier.evaluate(X_test, y_test)
     return params
 
 
@@ -396,24 +406,27 @@ def train_final_model(classifier_class: Type[Any] = KNeighborsClassifier,
     X_train, X_valid, y_train, y_valid = train_test_split(X, y,
                                                           test_size=0.2,
                                                           random_state=random_state)
-    losses = executor.train_embedding(X_train, X_valid, y_train, y_valid,
+    executor.train_embedding(X_train, X_valid, y_train, y_valid,
                                       MODELS_DIR)
     classifier = KNearestEmbedding(executor.embedding_model,
-                                   classifier_class,
-                                   **classifier_params) \
+                                   classifier_class, **classifier_params) \
         .fit(X, y)
     pickle.dump(classifier.classifier,
                 (MODELS_DIR / f'finalized_model.sav').open('wb'))
 
 
 if __name__ == '__main__':
-    params = [dict(n_neighbors=n) for n in range(1, 15, 2)]
-    nn1 = [dict(n_neighbors=1)]
-    # determine_best_model(64, 1, nn1)
-    # determine_best_model(64, 10, nn1)
-    # determine_best_model(64, 20, nn1)
-    # determine_best_model(64, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
-    # determine_best_model(128, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
+    """nn1 = [dict(n_neighbors=1)]
+    determine_best_model(64, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
+    determine_best_model(128, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
+    determine_best_model(64, 1, nn1)
     determine_best_model(64, 1, nn1, DataPreProcessing.DUPLICATE_TRAINING)
+    determine_best_model(64, 10, nn1)
     determine_best_model(64, 10, nn1, DataPreProcessing.DUPLICATE_TRAINING)
-    # train_final_model()
+    determine_best_model(64, 20, nn1)
+    """
+    params = [dict(n_neighbors=n) for n in range(1, 15, 2)]
+    best_params = determine_best_model(64, 10, params,
+                                       evaluate_on_test_dataset=True)
+    train_final_model(**best_params)
+

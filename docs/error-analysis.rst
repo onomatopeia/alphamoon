@@ -82,55 +82,55 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
      - Validation Recall
 
    * - 1
-     - 0.179320
-     - 0.261942
-     - 0.751760
-     - 0.744850
-     - 0.751760
-     - 0.746517
+     - 0.308352
+     - 0.259931
+     - 0.739787
+     - 0.734569
+     - 0.739787
+     - 0.735852
 
    * - 2
-     - 0.194317
-     - 0.286915
-     - 0.744923
-     - 0.738431
-     - 0.744923
-     - 0.740450
+     - 0.187157
+     - 0.306954
+     - 0.750433
+     - 0.747955
+     - 0.750433
+     - 0.747597
    * - 3
-     - 0.177942
-     - 0.226764
-     - 0.738562
-     - 0.733375
-     - 0.738562
-     - 0.733803
+     - 0.164134
+     - 0.196031
+     - 0.736008
+     - 0.730271
+     - 0.736008
+     - 0.730938
    * - 4
-     - 0.154313
-     - 0.193211
-     - 0.682755
-     - 0.676924
-     - 0.682755
-     - 0.678782
+     - 0.238456
+     - 0.191708
+     - 0.649827
+     - 0.644341
+     - 0.649827
+     - 0.645733
    * - **5**
-     - **0.597860**
-     - **1.754898**
-     - **0.758572**
-     - **0.752915**
-     - **0.758572**
-     - **0.754936**
+     - **0.628041**
+     - **1.644687**
+     - **0.763497**
+     - **0.760123**
+     - **0.763497**
+     - **0.760612**
    * - 6
-     - 0.674018
-     - 3.453382
-     - 0.735445
-     - 0.730988
-     - 0.735445
-     - 0.732461
+     - 1.100111
+     - 1.481385
+     - 0.707281
+     - 0.700070
+     - 0.707281
+     - 0.701771
    * - 7
-     - 1.191720
-     - 1.613562
-     - 0.707692
-     - 0.702684
-     - 0.707692
-     - 0.703513
+     - 1.022579
+     - 3.379066
+     - 0.734522
+     - 0.731645
+     - 0.734522
+     - 0.731817
 
 .. _target to loss:
 
@@ -139,7 +139,7 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
    :alt: Training and validation loss in Experiment 5
    :align: center
 
-   Values of training and validation loss function in ten epochs in Experiment 5. The minimal validation loss was attained in the fourth epoch.
+   Values of training and validation loss functions in ten epochs in Experiment 5. The minimal validation loss was attained in the fourth epoch.
 
 In :numref:`target to loss`, the training and validation losses in Experiment 5 are presented. The minimal validation loss is attained in epoch number 4 and increases afterwards. The default learning rate of 0.001 was used for training.
 
@@ -175,13 +175,25 @@ In :numref:`target to all_classes` each class is represented by a sample image f
 k-Nearest Neighbor Classifier
 -----------------------------
 
-In the evaluation of the best classifier performance with respect to the number of voting nearest neighbors. Embedded images constitute a considered population out of which neighbors are chosen.
+In the evaluation of the best classifier performance with respect to the number of voting nearest neighbors. Embedded images constitute a considered population out of which neighbors are chosen. The evaluation was executed on the validation set.
 
 .. figure:: _static/images/knn_errors.png
    :width: 70%
    :align: center
-   :alt: k-Nearest Neighbor Classfier Performance
+   :alt: k-Nearest Neighbor Classifier Performance
 
-   k-Nearest Neighbor Classifier Goodness\n with respect to the Number of Neighbors k
+   k-Nearest Neighbor Classifier Goodness with respect to the Number of Neighbors k
 
 Best on the above results, k=9 was chosen as the best number of voting neighbors in the classifier.
+
+Results on the test set
+-----------------------
+
+The selected 9-NN classifier of embeddings of length 64 with triplet loss margin equal 10 into 35 classes attains the following performance metrics values on the test set:
+
+- Accuracy = 0.802916
+- Precision = 0.786258
+- Recall = 0.802916
+- F1-score = 0.787655
+
+

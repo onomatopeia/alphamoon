@@ -13,3 +13,4 @@ Pillow
 scipy
 scikit-learn
 tqdm
+pytest

@@ -37,11 +37,11 @@ class KNearestEmbedding:
         :param X: array of samples
         :return: array of embeddings
         """
-        X = torch.from_numpy(X)
+        X_tensor = torch.from_numpy(X)
         if self.use_cuda:
-            X = X.to("cuda")
+            X_tensor = X_tensor.to("cuda")
 
-        return self.embedding_model.forward(X.float()).detach().to(
+        return self.embedding_model.forward(X_tensor.float()).detach().to(
             "cpu").numpy()
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'KNearestEmbedding':

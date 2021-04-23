@@ -16,7 +16,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from alphamoon.constants import (MODELS_DIR, MODELS_INVESTIGATION_DIR)
-from alphamoon.data.make_dataset import get_data_loader, Phase, get_data
+from alphamoon.data.make_dataset import (get_data_loader, Phase, get_data,
+                                         DataPreProcessing,
+                                         augment_training_set)
 from alphamoon.features.build_features import EmbeddingNet, TripletNet
 from alphamoon.models.classifier import KNearestEmbedding
 
@@ -64,7 +66,7 @@ class EmbeddingNetSupervisor:
             print(f'Epoch: {epoch} \tTraining Loss: {train_loss:.6f} '
                   f'\tValidation Loss: {valid_loss:.6f}')
             losses[Phase.TRAIN].append(f'{train_loss:.6f}')
-            losses[Phase.VALIDATION].append(f'{valid_loss}:.6f')
+            losses[Phase.VALIDATION].append(f'{valid_loss:.6f}')
             self.save_model(valid_loss, model, directory, epoch)
 
         return losses
@@ -319,7 +321,10 @@ class Executor:
 
 def determine_best_model(embedding_length: int,
                          margin: Union[float, int],
-                         knn_params: List[Dict[str, Any]]) -> Dict[str, Any]:
+                         knn_params: List[Dict[str, Any]],
+                         data_pre_processing: DataPreProcessing
+                         = DataPreProcessing.FIX_DUPLICATE_CLASSES) \
+        -> Dict[str, Any]:
     """This function determines the best model by performing the following
     actions:
 
@@ -333,18 +338,23 @@ def determine_best_model(embedding_length: int,
 
     :param embedding_length: length of embedding
     :param margin: value of the margin in the triplet loss function
-    :param knn_params: list of classifier's parameters dictrionaries
+    :param knn_params: list of classifier's parameters dictionaries
+    :param data_pre_processing: an action that shall be done to the data in \
+        the preprocessing stage
     :return: dictionary of classifier's parameters
     """
 
     random_state = 0
-    X, y = get_data()
+    X, y = get_data(data_pre_processing=data_pre_processing)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
                                                         random_state=random_state)
     X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train,
                                                           test_size=0.2,
                                                           random_state=random_state)
+
+    if data_pre_processing == DataPreProcessing.DUPLICATE_TRAINING:
+        X_train, y_train = augment_training_set(X_train, y_train)
 
     executor = Executor(X.shape[1], margin=margin,
                         embedding_length=embedding_length)
@@ -399,7 +409,11 @@ def train_final_model(classifier_class: Type[Any] = KNeighborsClassifier,
 if __name__ == '__main__':
     params = [dict(n_neighbors=n) for n in range(1, 15, 2)]
     nn1 = [dict(n_neighbors=1)]
-    determine_best_model(64, 1, nn1)
-    determine_best_model(64, 10, nn1)
-    determine_best_model(64, 20, nn1)
+    # determine_best_model(64, 1, nn1)
+    # determine_best_model(64, 10, nn1)
+    # determine_best_model(64, 20, nn1)
+    # determine_best_model(64, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
+    # determine_best_model(128, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
+    determine_best_model(64, 1, nn1, DataPreProcessing.DUPLICATE_TRAINING)
+    determine_best_model(64, 10, nn1, DataPreProcessing.DUPLICATE_TRAINING)
     # train_final_model()

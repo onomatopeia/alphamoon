@@ -1,12 +1,13 @@
 import pickle
 import random
 from enum import Enum
-from typing import Tuple, Any, Iterable, List, Dict
+from typing import Tuple, Any, Iterable, List
 
 import numpy as np
 import torch
 import torch.utils.data
-from torch.utils.data import Dataset, DataLoader, random_split
+from scipy.ndimage import affine_transform
+from torch.utils.data import Dataset, DataLoader
 
 from alphamoon.constants import INPUT_DATA_PATH
 
@@ -171,18 +172,63 @@ def fix_duplicate_classes(X: np.ndarray, y: np.ndarray) \
     return X_augmented, y_augmented
 
 
+class DataPreProcessing(Enum):
+    DUPLICATE_TRAINING = 2
+    FIX_DUPLICATE_CLASSES = 1
+    ADD_IMAGES_TO_N_CLASS = 0
+
+
 def get_data(file_path=INPUT_DATA_PATH,
-             fix_duplicate_classes_on: bool = True) \
+             data_pre_processing: DataPreProcessing
+             = DataPreProcessing.FIX_DUPLICATE_CLASSES) \
         -> Tuple[np.ndarray, np.ndarray]:
     """Returns the corrected data.
 
     :param file_path: path to a file with data
-    :param fix_duplicate_classes_on: whether to fix duplicate classes
+    :param data_pre_processing: action to perform to prepare the data
     :return: a tuple of samples and labels numpy arrays
     """
     with file_path.open('rb') as file_handle:
         X, y = pickle.load(file_handle)
 
-    if fix_duplicate_classes_on:
+    if data_pre_processing == DataPreProcessing.ADD_IMAGES_TO_N_CLASS:
+        one_shot_example = np.where(y[:, 0] == 30)[0][0]
+
+        img_w_h = int(np.sqrt(X.shape[1]))
+        image = np.reshape(X[one_shot_example], (img_w_h, img_w_h))
+
+        def transform(img, side_length):
+            return np.ravel(
+                affine_transform(img, get_transformation_matrix(side_length)))
+
+        # add 3 images
+        X = np.vstack((X, [transform(image, img_w_h) for _ in range(3)]))
+
+        # add 3 image labels
+        y = np.vstack((y, [30]))
+        y = np.vstack((y, [30]))
+        y = np.vstack((y, [30]))
+    else:
         X, y = fix_duplicate_classes(X, y)
     return X, y
+
+
+def augment_training_set(X_train: np.ndarray, y_train: np.ndarray) \
+        -> Tuple[np.ndarray, np.ndarray]:
+    """Duplicate the size of a (training) set and transform each image slightly
+    with a random affine transformation.
+
+    :param X_train: training examples
+    :param y_train: training labels
+    :return: tuple of augmented training examples and augmented training labels
+    """
+    examples = np.vstack((X_train, X_train))
+    labels = np.vstack((y_train, y_train))
+
+    img_w_h = int(np.sqrt(examples.shape[1]))
+    examples = np.reshape(examples, (examples.shape[0], img_w_h, img_w_h))
+    for i in range(examples.shape[0]):
+        examples[i, :, :] = affine_transform(
+            examples[i, :, :], get_transformation_matrix(img_w_h))
+    examples = examples.reshape(examples.shape[0], -1)
+    return examples, labels

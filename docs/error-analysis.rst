@@ -4,7 +4,7 @@ Results
 Triplet Network Results
 -----------------------
 
-The best set of hyperparameters is given by experiment No 5 and is put in bold. The best experiment was chosen based on the results presented in Table 2, namely based on obtained F1-score, Recall and Precision in a digit classification task on the testing set using a 1-NN classifier.
+The best set of hyperparameters is given by experiment No 5 and is put in bold. The best experiment was chosen based on the results presented in Table 2, namely based on obtained Accuracy, F1-score, Recall and Precision in a digit classification task on the validation set using a 1-NN classifier.
 
 In addition, training and validation losses of each model are presented. The losses are the last recorded values before validation loss started to raise again, which indicates that the network started overfitting. Training loss and validation losses are margin dependent and so they allow to compare several models having the same margin. However, one should refrain from comparing models trained with different margins with these two metrics.
 
@@ -82,20 +82,20 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
      - Validation Recall
 
    * - 1
-     - 0.169091
-     - 0.212398
-     -
-     - 0.757729
-     - 0.755081
-     - 0.763422
+     - 0.179320
+     - 0.261942
+     - 0.751760
+     - 0.744850
+     - 0.751760
+     - 0.746517
 
    * - 2
-     - 0.331993
-     - 0.261527
-     -
-     - 0.756422
-     - 0.754194
-     - 0.762417
+     - 0.194317
+     - 0.286915
+     - 0.744923
+     - 0.738431
+     - 0.744923
+     - 0.740450
    * - 3
      - 0.177942
      - 0.226764
@@ -104,12 +104,12 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
      - 0.738562
      - 0.733803
    * - 4
-     - 0.234653
-     - 0.319424
-     -
-     - 0.662611
-     - 0.660686
-     - 0.667169
+     - 0.154313
+     - 0.193211
+     - 0.682755
+     - 0.676924
+     - 0.682755
+     - 0.678782
    * - **5**
      - **0.597860**
      - **1.754898**
@@ -118,19 +118,30 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
      - **0.758572**
      - **0.754936**
    * - 6
-     - 0.675475
-     - 3.144919
-     -
-     - 0.743570
-     - 0.742053
-     - 0.746606
-   * - 7
      - 0.674018
      - 3.453382
      - 0.735445
      - 0.730988
      - 0.735445
      - 0.732461
+   * - 7
+     - 1.191720
+     - 1.613562
+     - 0.707692
+     - 0.702684
+     - 0.707692
+     - 0.703513
+
+.. _target to loss:
+
+.. figure:: _static/images/embeddingnet_loss.png
+   :width: 90%
+   :alt: Training and validation loss in Experiment 5
+   :align: center
+
+   Values of training and validation loss function in ten epochs in Experiment 5. The minimal validation loss was attained in the fourth epoch.
+
+In :numref:`target to loss`, the training and validation losses in Experiment 5 are presented. The minimal validation loss is attained in epoch number 4 and increases afterwards. The default learning rate of 0.001 was used for training.
 
 .. figure:: _static/images/confusion_matrix.png
    :width: 90%

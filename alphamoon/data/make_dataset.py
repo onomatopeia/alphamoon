@@ -1,3 +1,4 @@
+import pickle
 import random
 from enum import Enum
 from typing import Tuple, Any, Iterable, List, Dict
@@ -6,6 +7,8 @@ import numpy as np
 import torch
 import torch.utils.data
 from torch.utils.data import Dataset, DataLoader, random_split
+
+from alphamoon.constants import INPUT_DATA_PATH
 
 Triplet = Tuple[Iterable, Iterable, Iterable]
 
@@ -81,37 +84,26 @@ class TripletDataset(Dataset):
         return len(self.anchors)
 
 
-def get_data_loaders(X_train: np.ndarray, y_train: np.ndarray,
-                     batch_size: int = 10, shuffle: bool = True,
-                     num_workers: int = 0, pin_memory: bool = True,
-                     train_fraction: float = 0.8) -> Dict[Phase, DataLoader]:
+def get_data_loader(X: np.ndarray, y: np.ndarray,
+                    batch_size: int = 10, shuffle: bool = True,
+                    num_workers: int = 0,
+                    pin_memory: bool = True) -> DataLoader:
     """Creates a dictionary in which keys correspond to the phase of training \
     / evaluating the model whereas values are data loaders for respective \
     phases.
 
-    :param X_train: feature matrix of size n_examples x n_features
-    :param y_train: label matrix or column vector of size n_examples x 1
+    :param X: feature matrix of size n_examples x n_features
+    :param y: label matrix or column vector of size n_examples x 1
     :param batch_size: size of a batch
     :param shuffle: a flag whether to shuffle the data
     :param num_workers: number of workers, 0 by default corresponding to the \
         auto setup
     :param pin_memory: whether to use page-locked ("pinned") memory
-    :param train_fraction: fraction of training set; the remained of data \
-        belongs to validation set
     :return: dictionary of Phase-bound data loaders
     """
-    data_loaders = dict()
-    params: Dict[str, Any] = dict(batch_size=batch_size, shuffle=shuffle,
-                  num_workers=num_workers, pin_memory=pin_memory)
-    train_dataset = TripletDataset(X_train, y_train)
-    total = X_train.shape[0]
-    train_size = int(total * train_fraction)
-    validation_size = total - train_size
-    train_set, validation_set = random_split(train_dataset,
-                                             [train_size, validation_size])
-    data_loaders[Phase.TRAIN] = DataLoader(train_set, **params)
-    data_loaders[Phase.VALIDATION] = DataLoader(validation_set, **params)
-    return data_loaders
+    train_set = TripletDataset(X, y)
+    return DataLoader(train_set, batch_size=batch_size, shuffle=shuffle,
+                      num_workers=num_workers, pin_memory=pin_memory)
 
 
 def get_transformation_matrix(img_w_h: int) -> np.ndarray:
@@ -160,3 +152,37 @@ def get_transformation_matrix(img_w_h: int) -> np.ndarray:
     affine2 = np.array([[Sy, 0, Tx], [0, Sx, Ty], [0, 0, 1]])
     trans = np.matmul(rotation, affine2)
     return trans
+
+
+def fix_duplicate_classes(X: np.ndarray, y: np.ndarray) \
+        -> Tuple[np.ndarray, np.ndarray]:
+    """Fixes duplicate classes by reassigning examples in class 30 to class
+    14.
+
+    :param X: examples
+    :param y: labels
+    :return: modified examples, modified labels
+    """
+    one_shot_example = np.where(y[:, 0] == 30)[0][0]
+
+    X_augmented = X.copy()
+    y_augmented = y.copy()
+    y_augmented[one_shot_example] = 14
+    return X_augmented, y_augmented
+
+
+def get_data(file_path=INPUT_DATA_PATH,
+             fix_duplicate_classes_on: bool = True) \
+        -> Tuple[np.ndarray, np.ndarray]:
+    """Returns the corrected data.
+
+    :param file_path: path to a file with data
+    :param fix_duplicate_classes_on: whether to fix duplicate classes
+    :return: a tuple of samples and labels numpy arrays
+    """
+    with file_path.open('rb') as file_handle:
+        X, y = pickle.load(file_handle)
+
+    if fix_duplicate_classes_on:
+        X, y = fix_duplicate_classes(X, y)
+    return X, y

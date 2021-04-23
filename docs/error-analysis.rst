@@ -76,13 +76,15 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
    * - Experiment No
      - Training Loss
      - Validation Loss
-     - Testing F1
-     - Testing Precision
-     - Testing Recall
+     - Validation Accuracy
+     - Validation F1
+     - Validation Precision
+     - Validation Recall
 
    * - 1
      - 0.169091
      - 0.212398
+     -
      - 0.757729
      - 0.755081
      - 0.763422
@@ -90,39 +92,45 @@ In experiments 1 and 2, the initial dataset was extended with only 3 images repr
    * - 2
      - 0.331993
      - 0.261527
+     -
      - 0.756422
      - 0.754194
      - 0.762417
    * - 3
-     - 0.120639
-     - 0.221972
-     - 0.740752
-     - 0.739562
-     - 0.744193
+     - 0.177942
+     - 0.226764
+     - 0.738562
+     - 0.733375
+     - 0.738562
+     - 0.733803
    * - 4
      - 0.234653
      - 0.319424
+     -
      - 0.662611
      - 0.660686
      - 0.667169
    * - **5**
-     - **0.940140**
-     - **1.445811**
-     - **0.771555**
-     - **0.769709**
-     - **0.775063**
+     - **0.597860**
+     - **1.754898**
+     - **0.758572**
+     - **0.752915**
+     - **0.758572**
+     - **0.754936**
    * - 6
      - 0.675475
      - 3.144919
+     -
      - 0.743570
      - 0.742053
      - 0.746606
    * - 7
-     - 1.171921
-     - 2.646956
-     - 0.722494
-     - 0.720766
-     - 0.726194
+     - 0.674018
+     - 3.453382
+     - 0.735445
+     - 0.730988
+     - 0.735445
+     - 0.732461
 
 .. figure:: _static/images/confusion_matrix.png
    :width: 90%

@@ -14,12 +14,17 @@ class KNearestEmbedding:
     Classifier of the alphanumeric handwritten characters embeddings.
     """
 
-    def __init__(self, embedding_model: EmbeddingNet, classifier_class: Type[Any],
-                 **kwargs) -> None:
+    def __init__(self, embedding_model: EmbeddingNet,
+                 classifier_class: Type[Any],
+                 **kwargs: Any) -> None:
         """Initializes an instance of the :class:`ClassifierSupervisor` class.
 
         :param embedding_model: embedding model
-        :param n_neighbours: number of neighbors in KNN algorithm
+        :param classifier_class: class of the classifier
+        :param kwargs: keyword arguments specific for the ``classfier_class``,
+            for instance:
+
+            - ``n_neighbours``: number of neighbors in KNN algorithm
         """
         self.embedding_model = embedding_model
         self.use_cuda = torch.cuda.is_available()
@@ -87,7 +92,7 @@ class KNearestEmbedding:
         y_flat = y.ravel()
         print(self.classifier.__class__.__name__)
         print('Accuracy,Precision,Recall,F1-score')
-        print(accuracy_score(y_flat, y_pred),
-              precision_score(y_flat, y_pred, average='weighted'),
-              recall_score(y_flat, y_pred, average='weighted'),
-              f1_score(y_flat, y_pred, average='weighted'))
+        print(f'- {accuracy_score(y_flat, y_pred):.6f}')
+        print(f'- {precision_score(y_flat, y_pred, average="weighted"):.6f}')
+        print(f'- {recall_score(y_flat, y_pred, average="weighted"):.6f}')
+        print(f'- {f1_score(y_flat, y_pred, average="weighted"):6f}')

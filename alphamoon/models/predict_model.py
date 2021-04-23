@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.cuda
-
 from sklearn.neighbors import KNeighborsClassifier
 
 from alphamoon.constants import (MODELS_DIR, EMBEDDING_MODEL_FILENAME,

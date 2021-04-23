@@ -407,7 +407,7 @@ def train_final_model(classifier_class: Type[Any] = KNeighborsClassifier,
                                                           test_size=0.2,
                                                           random_state=random_state)
     executor.train_embedding(X_train, X_valid, y_train, y_valid,
-                                      MODELS_DIR)
+                             MODELS_DIR)
     classifier = KNearestEmbedding(executor.embedding_model,
                                    classifier_class, **classifier_params) \
         .fit(X, y)
@@ -416,9 +416,7 @@ def train_final_model(classifier_class: Type[Any] = KNeighborsClassifier,
 
 
 if __name__ == '__main__':
-
     params = [dict(n_neighbors=n) for n in range(1, 15, 2)]
     best_params = determine_best_model(64, 10, params,
                                        evaluate_on_test_dataset=True)
     train_final_model(**best_params)
-

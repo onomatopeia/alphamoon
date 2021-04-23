@@ -416,15 +416,7 @@ def train_final_model(classifier_class: Type[Any] = KNeighborsClassifier,
 
 
 if __name__ == '__main__':
-    """nn1 = [dict(n_neighbors=1)]
-    determine_best_model(64, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
-    determine_best_model(128, 1, nn1, DataPreProcessing.ADD_IMAGES_TO_N_CLASS)
-    determine_best_model(64, 1, nn1)
-    determine_best_model(64, 1, nn1, DataPreProcessing.DUPLICATE_TRAINING)
-    determine_best_model(64, 10, nn1)
-    determine_best_model(64, 10, nn1, DataPreProcessing.DUPLICATE_TRAINING)
-    determine_best_model(64, 20, nn1)
-    """
+
     params = [dict(n_neighbors=n) for n in range(1, 15, 2)]
     best_params = determine_best_model(64, 10, params,
                                        evaluate_on_test_dataset=True)
